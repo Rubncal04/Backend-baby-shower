@@ -76,7 +76,14 @@ Todos los endpoints van bajo el prefijo `/api`.
 |---|---|---|
 | `POST` | `/api/admin/login` | `{ email, password }` → JWT (8 horas) |
 | `GET` | `/api/admin/overview` | Contadores de asistencia y regalos |
+| `GET` | `/api/admin/groups` | Lista todos los grupos (incluye vacíos) para asignar invitados |
+| `POST` | `/api/admin/groups` | Crea un grupo `{ name, type, key? }` |
+| `PATCH` | `/api/admin/groups/:groupKey` | Edita nombre o tipo del grupo |
+| `DELETE` | `/api/admin/groups/:groupKey` | Elimina un grupo vacío |
 | `GET` | `/api/admin/guests` | Checklist de invitados agrupados |
+| `POST` | `/api/admin/guests` | Crea un invitado `{ name, type, phone?, groupKey?, groupName? }` |
+| `PATCH` | `/api/admin/guests/:guestId` | Edita nombre, celular, tipo o grupo |
+| `DELETE` | `/api/admin/guests/:guestId` | Elimina un invitado |
 | `PATCH` | `/api/admin/guests/:guestId/attendance` | Marca asistencia (`true`, `false` o `null`) |
 | `GET` | `/api/admin/gifts` | Catálogo completo, con quién reservó cada uno |
 | `POST` | `/api/admin/gifts/:giftId/release` | Libera un regalo (no aplica a la Cuna Cama) |
@@ -134,6 +141,23 @@ Cambia estos valores **antes** del primer arranque en producción. El seed no pi
 | Frontend | Vercel |
 
 En Render configura las mismas variables del `.env`. El `PORT` lo asigna Render; el servidor ya escucha en `0.0.0.0`.
+
+### MongoDB Atlas desde Render
+
+Render no tiene una IP fija en el plan gratuito. Si Atlas solo permite tu IP de casa, el deploy falla con `MongooseServerSelectionError` y Render reporta *No open ports detected* porque Nest no llega a abrir el puerto hasta conectar a Mongo.
+
+En Atlas:
+
+1. **Network Access** → **Add IP Address**
+2. Elige **Allow Access from Anywhere**: `0.0.0.0/0`
+3. Confirma que el usuario de **Database Access** coincide con el de `MONGODB_URI`
+4. Si la contraseña tiene caracteres especiales (`@`, `#`, `/`, `%`), encódalos en la URI (`@` → `%40`)
+
+URI de ejemplo:
+
+```env
+MONGODB_URI=mongodb+srv://usuario:password@cluster0.xxxxx.mongodb.net/baby-shower
+```
 
 ---
 

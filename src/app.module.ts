@@ -11,9 +11,18 @@ import { HealthController } from './health/health.controller';
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        uri: configService.get<string>('MONGODB_URI'),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const uri = configService.get<string>('MONGODB_URI');
+        if (!uri) {
+          throw new Error('Falta la variable MONGODB_URI');
+        }
+
+        return {
+          uri,
+          serverSelectionTimeoutMS: 15000,
+          connectTimeoutMS: 15000,
+        };
+      },
       inject: [ConfigService],
     }),
     SharedModule,

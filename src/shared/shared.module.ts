@@ -3,6 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Guest, GuestSchema } from './schemas/guest.schema';
 import { Gift, GiftSchema } from './schemas/gift.schema';
 import { Admin, AdminSchema } from './schemas/admin.schema';
+import { Group, GroupSchema } from './schemas/group.schema';
 import { JwtGuard } from './jwt.guard';
 import { GuestTokenGuard } from './guest-token.guard';
 import { SeedService } from '../seed/seed.service';
@@ -14,6 +15,7 @@ import { SeedService } from '../seed/seed.service';
       { name: Guest.name, schema: GuestSchema },
       { name: Gift.name, schema: GiftSchema },
       { name: Admin.name, schema: AdminSchema },
+      { name: Group.name, schema: GroupSchema },
     ]),
   ],
   providers: [JwtGuard, GuestTokenGuard, SeedService],

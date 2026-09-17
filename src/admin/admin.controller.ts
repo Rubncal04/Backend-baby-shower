@@ -1,7 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { LoginDto } from './dto/login.dto';
 import { UpdateAttendanceDto } from './dto/update-attendance.dto';
+import { CreateGuestDto } from './dto/create-guest.dto';
+import { UpdateGuestDto } from './dto/update-guest.dto';
+import { CreateGroupDto } from './dto/create-group.dto';
+import { UpdateGroupDto } from './dto/update-group.dto';
 import { JwtGuard } from '../shared/jwt.guard';
 
 @Controller('admin')
@@ -21,11 +25,60 @@ export class AdminController {
     return this.adminService.getOverview();
   }
 
+  /** Returns every group, including empty ones, for assigning guests. */
+  @Get('groups')
+  @UseGuards(JwtGuard)
+  getGroups() {
+    return this.adminService.getGroups();
+  }
+
+  /** Creates a group that guests can join later. */
+  @Post('groups')
+  @UseGuards(JwtGuard)
+  createGroup(@Body() body: CreateGroupDto) {
+    return this.adminService.createGroup(body);
+  }
+
+  /** Updates a group's name or type. */
+  @Patch('groups/:groupKey')
+  @UseGuards(JwtGuard)
+  updateGroup(@Param('groupKey') groupKey: string, @Body() body: UpdateGroupDto) {
+    return this.adminService.updateGroup(groupKey, body);
+  }
+
+  /** Deletes an empty group. */
+  @Delete('groups/:groupKey')
+  @UseGuards(JwtGuard)
+  deleteGroup(@Param('groupKey') groupKey: string) {
+    return this.adminService.deleteGroup(groupKey);
+  }
+
   /** Returns the guest checklist grouped by family/friends. */
   @Get('guests')
   @UseGuards(JwtGuard)
   getGuests() {
     return this.adminService.getGuests();
+  }
+
+  /** Adds a guest, optionally joining an existing group. */
+  @Post('guests')
+  @UseGuards(JwtGuard)
+  createGuest(@Body() body: CreateGuestDto) {
+    return this.adminService.createGuest(body);
+  }
+
+  /** Updates a guest's name, phone, type, or group. */
+  @Patch('guests/:guestId')
+  @UseGuards(JwtGuard)
+  updateGuest(@Param('guestId') guestId: string, @Body() body: UpdateGuestDto) {
+    return this.adminService.updateGuest(guestId, body);
+  }
+
+  /** Removes a guest from the event. */
+  @Delete('guests/:guestId')
+  @UseGuards(JwtGuard)
+  deleteGuest(@Param('guestId') guestId: string) {
+    return this.adminService.deleteGuest(guestId);
   }
 
   /** Updates a guest attendance from the admin checklist. */
