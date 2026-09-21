@@ -12,7 +12,7 @@ import * as jwt from 'jsonwebtoken';
 import { v4 as uuidv4 } from 'uuid';
 import { Admin, AdminDocument } from '../shared/schemas/admin.schema';
 import { Guest, GuestDocument, GuestType } from '../shared/schemas/guest.schema';
-import { Gift, GiftDocument } from '../shared/schemas/gift.schema';
+import { Gift, GiftDocument, GiftTier } from '../shared/schemas/gift.schema';
 import { Group, GroupDocument } from '../shared/schemas/group.schema';
 import { EVENT_INFO } from '../seed/event.seed';
 import { normalizePhone } from '../shared/phone.util';
@@ -20,6 +20,8 @@ import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { CreateGiftDto } from './dto/create-gift.dto';
+import { UpdateGiftDto } from './dto/update-gift.dto';
 
 @Injectable()
 export class AdminService {
@@ -318,6 +320,80 @@ export class AdminService {
     };
   }
 
+  /** Adds a visible gift to the catalog so guests can reserve it. */
+  async createGift(body: CreateGiftDto) {
+    const name = this.requireName(body?.name);
+    const tier = this.requireVisibleTier(body?.tier);
+    const icon = body?.icon?.trim() || '';
+    const order =
+      typeof body?.order === 'number' && Number.isFinite(body.order)
+        ? body.order
+        : await this.nextGiftOrder();
+    const visible = body?.visible === false ? false : true;
+
+    const gift = await this.giftModel.create({
+      id: `${this.slugify(name)}-${uuidv4().slice(0, 8)}`,
+      name,
+      icon,
+      order,
+      tier,
+      visible,
+      preReserved: false,
+      reserved: false,
+      reservedByGuestId: null,
+      reservedByName: null,
+      reservedByGroupKey: null,
+      reservedAt: null,
+    });
+
+    return this.toAdminGift(gift);
+  }
+
+  /** Updates catalog fields of a gift without touching an existing reservation. */
+  async updateGift(giftId: string, body: UpdateGiftDto) {
+    const gift = await this.giftModel.findOne({ id: giftId });
+    if (!gift) throw new NotFoundException('Regalo no encontrado');
+
+    if (body?.name !== undefined) {
+      gift.name = this.requireName(body.name);
+    }
+    if (body?.tier !== undefined) {
+      gift.tier = this.requireTier(body.tier);
+      gift.visible = gift.tier === 'oculto' ? false : gift.visible;
+    }
+    if (body?.icon !== undefined) {
+      gift.icon = String(body.icon).trim();
+    }
+    if (typeof body?.order === 'number' && Number.isFinite(body.order)) {
+      gift.order = body.order;
+    }
+    if (body?.visible !== undefined) {
+      if (gift.preReserved && body.visible === true) {
+        throw new BadRequestException(
+          'La Cuna Cama no puede mostrarse a los invitados.',
+        );
+      }
+      gift.visible = Boolean(body.visible);
+    }
+
+    await gift.save();
+    return this.toAdminGift(gift);
+  }
+
+  /** Deletes a gift that was not pre-reserved for the hosts. */
+  async deleteGift(giftId: string) {
+    const gift = await this.giftModel.findOne({ id: giftId });
+    if (!gift) throw new NotFoundException('Regalo no encontrado');
+    if (gift.preReserved) {
+      throw new BadRequestException(
+        'La Cuna Cama no se puede eliminar porque ya estaba reservada.',
+      );
+    }
+
+    await this.giftModel.deleteOne({ id: giftId });
+    return { success: true, id: giftId };
+  }
+
   /** Releases a non-pre-reserved gift so another group can pick it. */
   async releaseGift(giftId: string) {
     const gift = await this.giftModel.findOne({ id: giftId });
@@ -479,6 +555,32 @@ export class AdminService {
       throw new BadRequestException('El tipo debe ser familia o amigos.');
     }
     return type;
+  }
+
+  /** Validates a visible gift tier for newly created catalog items. */
+  private requireVisibleTier(tier: string): GiftTier {
+    if (tier !== 'costoso' && tier !== 'economico') {
+      throw new BadRequestException(
+        'El tipo del regalo debe ser costoso (familia) o economico (amigos).',
+      );
+    }
+    return tier;
+  }
+
+  /** Validates any gift tier, including hidden pre-reserved items. */
+  private requireTier(tier: string): GiftTier {
+    if (tier !== 'costoso' && tier !== 'economico' && tier !== 'oculto') {
+      throw new BadRequestException(
+        'El tipo del regalo debe ser costoso, economico u oculto.',
+      );
+    }
+    return tier;
+  }
+
+  /** Returns the next catalog order after the current highest gift. */
+  private async nextGiftOrder() {
+    const last = await this.giftModel.findOne().sort({ order: -1 }).select({ order: 1 });
+    return (last?.order || 0) + 1;
   }
 
   /** Normalizes an optional phone, treating empty values as null. */

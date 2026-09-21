@@ -86,6 +86,9 @@ Todos los endpoints van bajo el prefijo `/api`.
 | `DELETE` | `/api/admin/guests/:guestId` | Elimina un invitado |
 | `PATCH` | `/api/admin/guests/:guestId/attendance` | Marca asistencia (`true`, `false` o `null`) |
 | `GET` | `/api/admin/gifts` | Catálogo completo, con quién reservó cada uno |
+| `POST` | `/api/admin/gifts` | Crea un regalo `{ name, tier, icon?, order?, visible? }` |
+| `PATCH` | `/api/admin/gifts/:giftId` | Edita nombre, tipo, icono, orden o visibilidad |
+| `DELETE` | `/api/admin/gifts/:giftId` | Elimina un regalo (no aplica a la Cuna Cama) |
 | `POST` | `/api/admin/gifts/:giftId/release` | Libera un regalo (no aplica a la Cuna Cama) |
 
 ---

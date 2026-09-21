@@ -6,6 +6,8 @@ import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
+import { CreateGiftDto } from './dto/create-gift.dto';
+import { UpdateGiftDto } from './dto/update-gift.dto';
 import { JwtGuard } from '../shared/jwt.guard';
 
 @Controller('admin')
@@ -96,6 +98,27 @@ export class AdminController {
   @UseGuards(JwtGuard)
   getGifts() {
     return this.adminService.getGifts();
+  }
+
+  /** Adds a gift to the catalog for guests to reserve. */
+  @Post('gifts')
+  @UseGuards(JwtGuard)
+  createGift(@Body() body: CreateGiftDto) {
+    return this.adminService.createGift(body);
+  }
+
+  /** Updates a gift's name, tier, icon, order, or visibility. */
+  @Patch('gifts/:giftId')
+  @UseGuards(JwtGuard)
+  updateGift(@Param('giftId') giftId: string, @Body() body: UpdateGiftDto) {
+    return this.adminService.updateGift(giftId, body);
+  }
+
+  /** Removes a gift from the catalog. */
+  @Delete('gifts/:giftId')
+  @UseGuards(JwtGuard)
+  deleteGift(@Param('giftId') giftId: string) {
+    return this.adminService.deleteGift(giftId);
   }
 
   /** Releases a gift reservation unless it is the pre-reserved crib. */
